@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Private Terraform Enterprise Lab</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link REL="stylesheet" TYPE="text/css" HREF="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="link.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+name: Private-Terraform-Enterprise-Lab
+class: center,middle,title-slide
+count: false
+![:scale 40%](images/Terraform_VerticalLogo_FullColor.png)
+Private Terraform Enterprise Lab
+=========================
+Installing and Troubleshooting PTFE  
+In Restricted Corporate Networks
+
+???
+Welcome to the Private Terraform Enterprise lab! I'm your instructor, YOURNAME, and today I'll help you tame the beast that is PTFE. During the training you will install Private Terraform inside of a simulated corporate network with a proxy and firewall rules. Along the way we'll point out common mistakes and pitfalls to avoid. Let's get started!
+
+---
+name: Introductions
+class: center,middle,title-slide
+count: false
+Introductions
+=========================
+.contents[
+* Your Name
+* Job Title
+* Experience with Terraform
+* Fun fact about you
+]
+
+???
+Let's start with some brief introductions. Please share your name, your job title, any experience you've had with Terraform and perhaps an interesting fact about yourself.
+
+---
+name: Your-Instructor
+class: center,middle,title-slide
+count: false
+Your Instructor
+=========================
+.center[
+![:scale 80%](./images/c64.jpg)
+]
+Sean Carolan at the Seattle Computer Museum
+
+???
+Introduce yourself to the class, share a bit about your background. You can also add an image or text to this slide if you like.
+
+
+---
+name: Its-Dangerous-to-Go-Alone
+class: center, middle, title-slide
+count: false
+
+![:scale 100%](./images/its-dangerous-to-go-alone.png)
+
+???
+Be prepared! This workshop is designed to give you enough practice to install and troubleshoot PTFE on your own. 
+
+---
+name: Follow-Along
+class: center, middle, title-slide
+count: false
+
+Link to Slide Deck
+=========================
+https://scarolan.github.io/ptfe-lab
+-------------------------
+
+Login with password: .darkgreen[hashicorptraining]  
+
+???
+This entire slide presentation was created in Markdown.  Because Powerpoint is for the Muggles.
+
+If you want to skip ahead, that's fine but we won't be answering questions about slides we haven't covered yet. You can use the slide deck to get caught up or review in case you fall behind. I encourage you to work together and collaborate on the exercises.
+
+You can also use this slide deck to give the training yourself. All of the content is stored on github, so if you want to contribute it's as easy as editing a text file and submitting a pull request. 
+
+---
+name: Table-of-Contents
+class: center,middle
+Table of Contents
+=========================
+.contents[
+1. Intro to Private Terraform Enterprise
+2. Lab Setup
+3. Install Bitbucket Server
+4. Install Private Terraform Enterprise
+5. Connect PTFE to Bitbucket
+6. Provision an App Server
+]
+
+???
+Here are the different chapters of this slide deck and training lab. We'll start with a brief introduction to Private Terraform Enterprise, and then we'll provision a brand new lab environment using Terraform. Once we have access to our lab environments, each of you will install a Bitbucket Server. Next we'll install PTFE, and finally we'll connect PTFE to Bitbucket and provision an application server using some sample Terraform code. After we have everything configured correctly, we will snapshot your environment so you can continue to use it later for demos, practice, and troubleshooting.
+
+---
+name: Chapter-1
+class: center,middle
+.section[
+Chapter 1  
+Intro to Private Terraform Enterprise (PTFE)
+]
+
+---
+name: What-is-PTFE
+What is Private Terraform Enterprise?
+-------------------------
+* Software provided to customers
+* Runs in a private, isolated environment
+* Customer is responsible for installation, maintenance and backups
+* Containerized application that runs on Docker
+* License management and GUI provided by Replicated
+* Can run on bare metal, VMs or cloud
+
+???
+Terraform Enterprise was originally offered as a SaaS (Software as a Service) application but we quickly realized that many customers wish to run it behind their firewalls. PTFE was created to fill this need. Originally it was based on an AMI, which worked ok but was restricted to AWS only. During the first major rewrite, legacy components of the application were removed, and the installer was updated to use the Replicated platform.
+
+---
+name: PTFE-Architecture
+PTFE Architecture
+-------------------------
+![:scale 100%](./images/tfe-architecture.mermaid.png)
+
+???
+TODO: Some notes about PTFE architecture
+
+---
+name: Replicated
+Replicated
+-------------------------
+.content[.center[![:scale 50%](./images/replicated_logo.png)  
+http://www.replicated.com]  
+Replicated provides SaaS vendors a container-based platform for easily deploying their cloud-native applications inside customers' environments. It provides license management, online and airgap installation, and a control panel for your docker-based application.]
+
+???
+Replicated definintely has some rough edges and bumps to be aware of. We'll cover some of those during the training today.
+
+---
+name: Lab-Network-Architecture
+Lab Network Architecture
+-------------------------
+![:scale 100%](./images/network_diagram.png)
+
+???
+This is what your lab environment will look like from a network architecture point of view. Note that there are both private and public networks in this VPC. Machines deployed onto the private network have no internet access except via this proxy server. You can use this proxy to simulate the feeling of a restircted corporate network.
+
+---
+name: Chapter-1-Review
+class: middle,center
+.review[
+Chapter 1 Review  
+Intro to PTFE
+]
+.contents[
+☑️ Terraform Enterprise  
+☑️ Replicated  
+☑️ AWS lab network architecture  
+☑️ Prerequisites [Appendix A](#Appendix-A)
+]
+
+???
+So far we've covered Terraform Enterprise, Replicated, and your AWS lab network architecture. If you haven't already please take a look at the prequisites listed in Appendix A.  
+
+---
+name: Chapter-2
+class: center,middle
+.section[
+Chapter 2  
+Lab Setup
+]
+
+---
+name: Your-Training-Lab
+Your Training Lab Environment
+-------------------------
+
+TODO: Put an image on this slide. Maybe showing PTFE dashboard or something.
+
+This lab environment costs around $8.40 per day to run.
+
+???
+You can demo your own completed environment here if you wish and time permits.
+
+---
+name: Clone-Training-Repo
+Clone the Training Lab Git Repo
+-------------------------
+
+Command:
+```bash
+git clone https://github.com/scarolan/ptfe-lab
+```
+
+Output:
+```asciidoc
+Cloning into 'ptfe-lab'...
+remote: Counting objects: 92, done.
+remote: Compressing objects: 100% (62/62), done.
+remote: Total 92 (delta 52), reused 66 (delta 30), pack-reused 0
+Unpacking objects: 100% (92/92), done.
+Checking connectivity... done.
+```
+
+???
+This git repository contains Terraform code for building the lab. The accompanying slide deck is an HTML markdown slideshow stored in the docs directory. You can either open the file locally in a web browser, or access it here: https://scarolan.github.io/ptfe-lab
+
+TODO:  Make this repository public, move it into HashiCorp organization.
+
+---
+name: Configure-Your-Variables
+Configure Your Variables
+-------------------------
+Commands:
+```bash
+cd ptfe-lab
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Edit the terraform.tfvars file you just created and update your variables.
+
+---
+name: Configure-Your-Variables-2
+Configure Your Variables
+-------------------------
+File Contents:
+```bash
+# Customize these variables with your own settings
+*name = "YOURNAME"
+workstationpw = "Thisisaverylongpassword1234"
+tag_owner = "scarolan@hashicorp.com"
+tag_ttl = "72"
+rhel_version = "7.5"
+bbs_http_port = "7990"
+bbs_https_port = "8443"
+domain_name = "hashidemos.io"
+zone_id = "Z2VGUC188F45PC"
+```
+
+???
+NOTE: Partners or users who are deploying the lab into an account other than the HashiCorp SE AWS Demos account should update `domain_name` and `zone_id` to match the domain that is managed in route 53 in their own account. Everyone in the training should update the name variable.
+
+---
+name: Run-Terraform-Init
+Run Terraform Init
+-------------------------
+
+Command:
+```bash
+terraform init
+```
+
+Output:
+```asciidoc
+...
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+```
+
+???
+Terraform init is used to fetch all the modules and providers you'll need to build the lab.
+
+---
+name: Run-Terraform-Apply
+Run Terraform Apply
+-------------------------
+
+Command:
+```bash
+terraform apply
+```
+
+Output:
+```asciidoc
+...
+Workstation: ec2-18-236-70-20.us-west-2.compute.amazonaws.com
+Username: Administrator
+Password: Thisisaverylongpassword1234
+
+Once you have logged onto the workstation, you may SSH to the other instances
+using the short hostname. For example:
+
+ssh ptfe
+ssh bitbucket
+```
+
+Pay close attention to the Terraform output. It contains instructions that you will need in Chapter 3. You may wish to copy the output into a text file for easy reference.
+
+
+---
+name: Log-onto-Workstation
+Log on to your Workstation
+-------------------------
+.center[![:scale 50%](./images/rdp_screenshot.png)]
+
+???
+Mac OSX users should download the official Remote Desktop client from the app store. Windows users will have RDP built in already. Linux users may use rdesktop to connect. We suggest running the lab in full-screen mode, on its own desktop workspace. This way you can easily swipe back and forth between your regular laptop environment and your training lab.
+
+---
+name: Set-Default-Browser
+Set Your Default Browser
+-------------------------
+Double click on the Google Chrome icon on your desktop. The first page you see will contain instructions on how to make Chrome your default browser. 
+.center[![:scale 50%](./images/chrome_default.png)]
+
+???
+Let's go ahead and move in, spruce the place up a bit and configure our desktop environment. We'll start with the default web browser. We use Google Chrome because IE is such a pain in the ass to use on Windows Server. Chrome 'just works' where as IE will through a bunch of security warnings for every page you open.
+
+---
+name: Set-up-cmder
+Set up cmder
+-------------------------
+
+.center[![:scale 60%](./images/cmder_settings.png)]
+
+Double click the green cmder icon on your desktop. Then click the green icon in the upper left corner of the terminal window. This will bring you to the settings menu. You may wish to change some of the default settings.  Here are some options:
+
+* Select 'Main' to adjust your font size and font.
+* Select 'Startup' to change your default shell to Powershell.
+* Select 'Colors' under 'Features' and you can change the color scheme for your terminal.
+
+???
+From the developer:  
+"Cmder is a software package created out of pure frustration over the absence of nice console emulators on Windows. It is based on amazing software, and spiced up with the Monokai color scheme and a custom prompt layout, looking sexy from the start."
+
+In case you're curious, there is no emoji support and no 256 bit color support on Windows terminals.  You can kind of hack 256 color support into it but it's a pain in the arse and requires running a shim that intercepts character codes and renders them correctly.
+
+This is the part where all you Mac and Linux users get to act all smug.
+
+---
+name: Set-up-cmder-2
+Set up cmder
+-------------------------
+
+.center[![:scale 80%](./images/inject_conemuhk.png)]
+
+Go to the 'Features' menu. Unselect the box for Inject ConemuHK. This will ensure that the terminal works correctly on your remote machines. Save all your changes.
+
+???
+This step is here because we ran into a weird issue with Cmder, SSH, and vim on the target system. vim was starting in 'Replace' mode due to some weird control character that was getting injected into the session.  Turning this off seems to make vim and xterm happy.
+
+Why is this inject thing here in the first place? Because of Windows bugs.   
+https://conemu.github.io/en/MicrosoftBugs.html
+
+---
+name: Verify-SSH
+Verify SSH Connectivity 
+-------------------------
+
+Commands:
+
+```bash
+ssh ptfe hostname
+ssh bitbucket hostname
+ssh proxy hostname
+```
+
+Output:
+```asciidoc
+ssh ptfe hostname
+The authenticity of host 'ptfe.YOURNAME.hashidemos.io (172.19.52.150)' can't be established.
+ECDSA key fingerprint is SHA256:dEYEIngoY7n+yVQW5ZQ0B+jIyaO2UlZ4qk74A1oLaT0.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'ptfe.YOURNAME.hashidemos.io,172.19.52.150' (ECDSA) to the list of known hosts.
+ptfe.YOURNAME.hashidemos.io
+```
+
+???
+There are three Linux hosts on the network that you can SSH onto. The PTFE server, the Bitbucket server, and the Squid proxy server. For convenience we created an ssh config file in the Administrator user's home directory (~/.ssh/config). This is what allows you to use short hostnames to SSH to the other hosts.
+
+When you SSH to each host for the first time, you'll be prompted to accept the key fingerprint before you continue. This lets SSH know that you trust the remote machine.  You can have multiple tabs or windows open, with each connected to a different machine.
+
+---
+name: Chapter-2-Review
+class: middle,center
+.review[
+Chapter 2 Review  
+Lab Setup
+]
+.contents[
+☑️ Cloned the training repo  
+☑️ Configured variables  
+☑️ Installed Terraform modules and providers  
+☑️ Provisioned the lab environment  
+☑️ Verified connectivity
+]
+
+???
+Go over what you covered in chapter 2.
+
+---
+name: Chapter-3
+class: middle, center
+.section[
+Chapter 3  
+Install Bitbucket Server
+]
+
+---
+name: What-is-Bitbucket
+What is Bitbucket?
+-------------------------
+.center[![:scale 100%](./images/bitbucket_website.png)]
+
+???
+Bitbucket is a hosted or on-premise implementation of Git that is built for collaboration among teams. It provides similar functionality to GitHub and GitLab. Today we'll be using a trial version of the Bitbucket Server version.
+
+---
+name: Connect-to-BBS
+Connect to the Bitbucket Server
+-------------------------
+Command:
+```bash
+ssh bitbucket
+```
+
+---
+name: Get-Root
+Gain a root shell
+-------------------------
+Command:
+```bash
+sudo /bin/su - root
+```
+
+Note: This command is run on your Bitbucket server, not your workstation. Sometimes students will get confused if they are on the wrong machine. Gently point out the hostname in the terminal as a way to get your bearings.
+
+---
+name: Run-BBS-Installer
+Run the Bitbucket Installer
+-------------------------
+Command:
+```bash
+./atlassian-bitbucket-5.12.0-x64.bin
+```
+
+1. Select option 1 to start a new installation.
+2. Select option 1 to install a Server instance.
+3. Hit [Enter] to install in the default home directory.
+4. Hit [Enter] to install in the default data directory.
+5. Hit [Enter] to use the default http port 7990.
+6. Hit Y to install Bitbucket as a service.
+7. Hit i and [Enter] to install Bitbucket.
+8. Answer y to launch Bitbucket.
+
+In other words, just use all the default settings.
+
+---
+name: Verify-BBS-Running
+Verify that Bitbucket Server is Running
+-------------------------
+```bash
+service atlbitbucket status
+```
+
+If for some reason Bitbucket is not running, you can start it like this:
+```bash
+service atlbitbucket start
+```
+
+???
+Bitbucket should now be running on port 7990. Proceed to the next step.
+
+---
+name: Open-the-web-UI
+Open the Bitbucket Web UI
+-------------------------
+
+.center[![:scale 80%](./images/bitbucket_setup_1.png)]
+
+Open the web UI using the URL shown in your Terraform output. It should look something like this:
+
+.center[http://bitbucket.YOURNAME.hashidemos.io:7990]
+
+???
+If it wasn't obvious, you need to change YOURNAME to match your own environment. This is same as the `name` variable that we set in Chapter 2.
+
+---
+name: Continue-with-UI-Installer
+Continue with the UI Installer
+-------------------------
+
+.center[![:scale 80%](./images/bitbucket_setup_2.png)]
+
+If you already have an Atlassian account you can use it to sign in here. If not click the "create an account" link. The easiest way to log in is by using your Google credentials.
+
+???
+If you don't have an account yet the easiest way to get a new one is simply to log on using your personal or work Google account. Atlassian will automatically set up your account and provision your license onto the local instance. Slick.
+
+---
+name: Get-Trial-License
+Get a Trial License
+-------------------------
+
+.center[![:scale 80%](./images/bitbucket_setup_3.png)]
+
+Choose the Bitbucket Server option on the left. Leave everything else as is and click on 'Generate License' at the bottom of the page. Continue through the installer and set up your admin username and password. Verify that you can log onto the server with your new credentials.
+
+???
+Verify that all your participants are able to log in before proceeding.
+
+---
+name: Configure-BBS-Proxy
+Configure Bitbucket Proxy Settings
+-------------------------
+
+Choose Your Text Editor:
+```bash
+vim /opt/atlassian/bitbucket/5.12.0/bin/_start-webapp.sh
+```
+
+```bash
+nano /opt/atlassian/bitbucket/5.2.0/bin/_start-webapp.sh
+```
+
+File Contents:
+```asciidoc
+# Occasionally Atlassian Support may recommend that you set some specific JVM arguments.  You can use this
+# variable to do that. Simply uncomment the below line and add any required arguments. Note however, if this
+# environment variable has been set in the environment of the user running this script, uncommenting the below
+# will override that.
+#
+JVM_SUPPORT_RECOMMENDED_ARGS="-Dhttps.proxyHost=proxy.YOURNAME.hashidemos.io -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=ptfe.YOURNAME.hashidemos.io"
+```
+
+Edit the _start-webapp.sh file and look for a line that contains `JVM_SUPPORT_RECOMMENDED_ARGS`. Replace it with the settings in your Terraform output.
+
+???
+This is a safe space - no editor shaming. Unless you're using emacs. Then we are totally going to shame you.
+
+Emacs is an awesome operating system. If only it came with a decent text editor.  
+It's the only text editor that comes with 'therapist' mode.  
+You can always tell an emacs user by their buff crossfit pinky fingers.  
+GNU EMACS stands for Generally Not Used, Except by Middle-Aged Computer Scientists.
+
+I've been using vi for 20 years...mostly because I can't figure out how to exit it.  
+Vi has two modes:  Beep repeatedly, and "break everything".  
+I have created a foolproof random number generator. Stick a windows user in front of vi and ask them to exit the program.
+
+This might be a little tricky for people who aren't used to the command line. Suggest using nano if your users aren't comfy with vim. They should be able to copy this configuration right out of the Terraform output from Chapter 2.
+
+For fun checkout Vim adventures:
+https://vim-adventures.com/
+
+---
+name: Generate-SSL-Cert
+Generate a LetsEncrypt SSL Certificate
+-------------------------
+
+Command:
+```bash
+https_proxy=http://proxy.YOURNAME.hashidemos.io:3128 certbot certonly --server https://acme-v02.api.letsencrypt.org/directory --manual --preferred-challenges dns-01 -d bitbucket.YOURNAME.hashidemos.io
+```
+
+Output:
+```asciidoc
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Please deploy a DNS TXT record under the name
+_acme-challenge.bitbucket.YOURNAME.hashidemos.io with the following value:
+
+CoJ7kX8uVJd65aaPBpo4chWZ2nP0bq6daBOGuwPm6vg
+
+Before continuing, verify the record is deployed.
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+```
+
+Here we are using the `certbot` command to request a free SSL certificate from the LetsEncrypt API.  
+  
+.center[**When you reach this point in the script STOP.**]
+
+???
+It's important to stop here because you have to create a DNS record before proceeding.
+
+---
+name: Create-DNS-TXT-Record
+Create a DNS TXT Record
+-------------------------
+
+.center[![:scale 50%](./images/bitbucket_setup_4.png)]
+
+For this step you'll need to log onto the AWS console. Once you're logged in navigate to the Route 53 section. Select the domain name you'll be using in your lab. Use the 'Create Record Set' to create a new TXT record to verify your cert with LetsEncrypt.
+
+???
+Remember to set the record type to TXT, enclose the data in quotes, and set your TTL to 30 seconds. After you create your record wait at least 60 seconds before going back to the certbot script and hitting Enter.
+
+If you hit Enter too early, or have made a mistake the verification process will fail and you have to start all over. Patience is a virtue.
+
+???
+The key here is to wait at least one minute after creating your DNS text record. This ensures that your new DNS TXT record is available to the LetsEncrypt ACME service which will verify your request.
+
+---
+name: Verify-SSL-Cert
+Verify your SSL certificate
+-------------------------
+
+```asciidoc
+Waiting for verification...
+Resetting dropped connection: acme-v02.api.letsencrypt.org
+Starting new HTTPS connection (2): acme-v02.api.letsencrypt.org
+Cleaning up challenges
+
+IMPORTANT NOTES:
+ - Congratulations! Your certificate and chain have been saved at:
+*   /etc/letsencrypt/live/bitbucket.YOURNAME.hashidemos.io/fullchain.pem
+   Your key file has been saved at:
+*   /etc/letsencrypt/live/bitbucket.YOURNAME.hashidemos.io/privkey.pem
+   Your cert will expire on 2018-11-02. To obtain a new or tweaked
+   version of this certificate in the future, simply run certbot
+   again. To non-interactively renew *all* of your certificates, run
+   "certbot renew"
+```
+
+Now you can hit [Enter] to finish the verification process. If it is successful you'll see a message like the one above. Your cert and key are saved in the /etc/letsencrypt/live directory.
+
+---
+name: Convert-to-p12
+Convert the SSL Cert to p12 Format
+-------------------------
+
+Command:
+```bash
+openssl pkcs12 -export -name bitbucket.YOURNAME.hashidemos.io -in /etc/letsencrypt/live/bitbucket.YOURNAME.hashidemos.io/cert.pem -inkey /etc/letsencrypt/live/bitbucket.YOURNAME.hashidemos.io/privkey.pem -out /root/keystore.p12
+```
+
+Here we convert our certificate into p12 format. This is an intermediate step. Copy the command from your Terraform output and paste it into your cmder terminal. Choose a password that you can remember.
+
+---
+name: Convert-to-JKS
+Convert the SSL Cert to JKS Format
+-------------------------
+
+```bash
+/opt/atlassian/bitbucket/5.12.0/jre/bin/keytool -importkeystore -destkeystore /var/atlassian/application-data/bitbucket/shared/config/ssl-keystore.jks -srckeystore /root/keystore.p12 -srcstoretype pkcs12 -alias bitbucket.YOURNAME.hashidemos.io
+```
+
+This command will convert your cert into the Java Keystore format expected by Bitbucket. Copy and paste the command from your Terraform output and it will put the JKS cert into the correct location.
+
+---
+name: Edit-BBS-Properties
+Edit the bitbucket.properties file
+-------------------------
+
+Commands:
+```bash
+vim /root/bitbucket.properties
+cp /root/bitbucket.properties /var/atlassian/application-data/bitbucket/shared/bitbucket.properties
+```
+
+File contents:
+```java
+server.port=8443
+server.ssl.enabled=true
+server.ssl.key-store=/var/atlassian/application-data/bitbucket/shared/config/ssl-keystore.jks
+server.ssl.key-store-password=CHANGEME
+server.ssl.key-password=CHANGEME
+server.ssl.key-alias=bitbucket.YOURNAME.hashidemos.io
+```
+
+Update the passwords and the server.ssl.key-alias to match your settings.
+
+---
+name: Restart-Bitbucket-Server
+Restart Bitbucket Server
+-------------------------
+
+Command:
+```bash
+service atlbitbucket restart
+```
+
+If all went as planned, your Bitbucket instance will restart with SSL enabled on port 8443.
+
+---
+Log onto the https web UI
+-------------------------
+
+.center[![:scale 80%](./images/bitbucket_setup_5.png)]
+
+You should now see a green padlock in the browser URL address bar. 
+
+---
+Fix the "Base URL Mismatch" Error
+-------------------------
+
+.center[![:scale 80%](./images/bitbucket_setup_6.png)]
+
+Click on the yellow warning icon in the upper right corner. Update your Base URL with the new, https-enabled setting.  
+
+Congratulations! You now have an SSL-enabled Bitbucket server instance.
+
+---
+name: Chapter-3-Review
+class: middle,center
+.review[
+Chapter 3 Review  
+Bitbucket Installation
+]
+.contents[
+☑️ Installed Bitbucket  
+☑️ Set up the proxy  
+☑️ Generated an SSL cert with LetsEncrypt  
+☑️ Configured SSL cert and Base URL  
+☑️ Restarted Bitbucket in SSL mode
+]
+
+---
+name: Chapter-4
+class: middle, center
+.section[
+Chapter 4  
+Install Private Terraform Enterprise
+]
+
+---
+name: Log-on-to-PTFE
+Log on to the PTFE server
+-------------------------
+Commands:
+```bash
+ssh ptfe
+```
+
+```bash
+sudo /bin/su - root
+```
+
+???
+Got Root?
+
+---
+name: Install-Docker
+Install Docker
+-------------------------
+Command:
+```bash
+yum -y install docker
+```
+
+Output:
+```asciidoc
+Installed:
+  docker.x86_64 2:1.13.1-68.gitdded712.el7
+
+Dependency Installed:
+  atomic-registries.x86_64 1:1.22.1-22.git5a342e3.el7                container-selinux.noarch 2:2.66-1.el7
+  container-storage-setup.noarch 0:0.10.0-1.gitdf0dcd5.el7           device-mapper-event.x86_64 7:1.02.146-4.el7
+  device-mapper-event-libs.x86_64 7:1.02.146-4.el7                   device-mapper-persistent-data.x86_64 0:0.7.3-3.el7
+  docker-client.x86_64 2:1.13.1-68.gitdded712.el7                    docker-common.x86_64 2:1.13.1-68.gitdded712.el7
+  docker-rhel-push-plugin.x86_64 2:1.13.1-68.gitdded712.el7          libaio.x86_64 0:0.3.109-13.el7
+  lvm2.x86_64 7:2.02.177-4.el7                                       lvm2-libs.x86_64 7:2.02.177-4.el7
+  oci-register-machine.x86_64 1:0-6.git2b44233.el7                   oci-systemd-hook.x86_64 1:0.1.16-1.git05bd9a0.el7
+  oci-umount.x86_64 2:2.3.3-3.gite3c9055.el7                         python2-pytoml.noarch 0:0.1.17-1.el7
+  skopeo-containers.x86_64 1:0.1.31-1.dev.gitae64ff7.el7             yajl.x86_64 0:2.0.4-4.el7
+
+Complete!
+```
+
+???
+Here we are installing docker from the RHEL Extras repository, which we've already enabled for you in your config. According to our documentation docker 1.13.1 is supported, even though the installer will warn you not to use it. ¯\_(ツ)_/¯ 
+
+https://www.terraform.io/docs/enterprise/private/rhel-install-guide.html
+
+---
+name: Remove-RHEL-Auth-Plugin
+Remove the RHEL Auth Plugin
+-------------------------
+
+Command:
+```bash
+vim /usr/lib/systemd/system/docker.service
+```
+
+File Contents:
+```asciidoc
+Environment=GOTRACEBACK=crash
+Environment=DOCKER_HTTP_HOST_COMPAT=1
+Environment=PATH=/usr/libexec/docker:/usr/bin:/usr/sbin
+ExecStart=/usr/bin/dockerd-current \
+          --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current \
+          --default-runtime=docker-runc \
+*         --authorization-plugin=rhel-push-plugin \
+          --exec-opt native.cgroupdriver=systemd \
+          --userland-proxy-path=/usr/libexec/docker/docker-proxy-current \
+          --init-path=/usr/libexec/docker/docker-init-current
+```
+
+Delete the highlighted line and save the file.
+
+???
+This plugin causes memory issues and therefore we disable it. This step is mandatory.
+https://www.terraform.io/docs/enterprise/private/rhel-install-guide.html#mandatory-configuration
+
+---
+name: Start-Docker
+Start Docker
+-------------------------
+Command:
+```bash
+systemctl start docker
+```
+
+---
+name: Testing-with-InSpec
+Testing with InSpec
+-------------------------
+.centered[
+![:scale 60%](./images/inspec.png)
+### http://www.inspec.io
+]  
+
+InSpec is an open source testing tool that can be used to inspect server configurations. It can be run on the local machine itself or remotely over SSH. We're going to use InSpec to run some pre-flight checks to ensure that our server is ready for PTFE installation.
+
+???
+Why InSpec? Because it's awesome and really easy to work with. Just declare what state you expect the machine to be in, and InSpec does the rest for you. Nothing required to be installed on the target machine at all. This is just another tool you can have in your kit to make your PTFE installations easier. You can also have your customer do this before you come on site to help them.
+
+---
+name: Download-the-ChefDK
+Download the ChefDK
+-------------------------
+.centered[
+![:scale 100%](./images/chefdk_download.png)
+### https://downloads.chef.io/chefdk
+]
+
+???
+The Chef Development Kit includes InSpec. It's free and is the easiest way to get InSpec onto your Windows workstation. Download the x86_64 bit installer for windows and install it.
+
+---
+name: Install-the-ChefDK
+Install the ChefDK
+-------------------------
+.centered[
+![:scale 50%](./images/chefdk_installer.png)
+
+Use the default settings and click Install.
+]
+
+???
+Nothing too crazy here. The ChefDK is 350MB in size because it includes its own Ruby and all the dependencies you need. Deal with it or install your own Ruby and dependencies.
+
+---
+name: Clone-Preflight-Repo
+Clone the Preflight Check Repo
+-------------------------
+Command:
+```bash
+git clone https://github.com/scarolan/ptfe-preflight-check
+```
+
+Output:
+```asciidoc
+Cloning into 'ptfe-preflight-check'...
+remote: Counting objects: 44, done.
+remote: Total 44 (delta 0), reused 0 (delta 0), pack-reused 44
+Unpacking objects: 100% (44/44), done.
+```
+
+Note: Do this on your workstation, NOT the PTFE server.
+
+---
+name: Edit-InSpec-Variables
+Edit the InSpec Test Variables
+-------------------------
+Command:
+```bash
+code .\ptfe-preflight-check\controls\network.rb
+```
+
+File Contents:
+```ruby
+# Network tests for PTFE preflight check
+# Set these to match your environment
+#proxy_url = 'http://my.proxy.server'
+#vcs_url = 'https://my.bitbucket.server'
+
+vcs_url = 'https://bitbucket.YOURNAME.hashidemos.io:8443'
+proxy_url = 'http://proxy.YOURNAME.hashidemos.io:3128'
+```
+
+You can use the `code` shortcut anywhere in Windows to edit files or open directories using Visual Studio Code. Edit the network.rb file and set vcs_url and proxy_url to match your environment. Save and close the file.
+
+---
+name: Run-Preflight-Checks
+Run Preflight Checks on PTFE Server
+-------------------------
+
+Command:
+```bash
+inspec exec ptfe-preflight-check -t ssh://ec2-user@ptfe.YOURNAME.hashidemos.io -i ~/.ssh/id_rsa --sudo
+```
+
+Output:
+```asciidoc
+...
+[PASS]  docker-config: File /usr/lib/systemd/system/docker.service
+[PASS]  File /usr/lib/systemd/system/docker.service content should not include "--authorization-plugin=rhel-push-plugin"
+[PASS]  Command docker info 2> /dev/null | grep Authorization exit_status should eq 1
+[PASS]  storage-config: Command uname -r
+[PASS]  Command uname -r stdout should cmp > "3.10.0-693"
+[PASS]  Mount / should be mounted
+[PASS]  Mount / type should eq "xfs"
+[PASS]  Command xfs_info / stdout should include "ftype=1"
+[PASS]  Filesystem / size should be >= 41943040
+
+Profile Summary: 6 successful controls, 0 control failures, 0 controls skipped
+*Test Summary: 14 successful, 0 failures, 0 skipped
+```
+
+???
+The important thing here is that *all* of the preflight checks pass before you proceed.  If you followed the instructions carefully everything should be working.
+
+---
+name: Generate-a-Trial-License
+Download Your Trial PTFE License
+-------------------------
+
+.centered[
+![:scale 50%](./images/replicated_login.png)
+]
+
+Ask your friendly neighborhood HashiCorp Solutions Engineer to generate a trial license for you. You should receive a download link along with a license file, and a password to access your installer bundle.
+
+Copy and paste the link into Chrome inside your workstation environment.  
+
+Enter the password you received from your SE to download the bundle.
+
+Your download link should look something like this:
+<sub>https://get.replicated.com/airgap/#/terraformenterprise/74fd29441337448b545fac76fca6c7e0</sub>
+
+???
+
+If you are a HashiCorp SE, you should have access to https://vendor.replicated.com/login to do this.  Make sure when you generate the license that `Airgap Download` is enabled.
+
+---
+name: Download-Airgap-Installer
+Download the Airgap Installer
+-------------------------
+
+.centered[
+![:scale 50%](./images/replicated_clipboard.png)
+]
+
+Click on the little clipboard icon to copy the real download URL into your clipboard. Go back to your PTFE server command line and enter the following commands. Make sure you are connected and [logged on as root](#Log-on-to-PTFE). You *must* wrap your URL in quotes for this to work.
+
+```bash
+export https_proxy=http://proxy.YOURNAME.hashidemos.io:3128
+wget "YOURDOWNLOADURL" -O /root/ptfe.airgap
+```
+
+This should download a file called `ptfe.airgap` into root's home directory.
+
+---
+name: Download-Install-Script
+Download the install.sh Script
+-------------------------
+Command:
+```bash
+curl https://install.terraform.io/ptfe/stable > /root/install.sh
+chmod +x install.sh
+```
+
+???
+This is buried way down near the bottom of the PTFE installation docs page:
+https://www.terraform.io/docs/enterprise/private/install-installer.html#run-the-installer-online
+
+---
+name: Run-Install-Script
+Run the install.sh script
+-------------------------
+Command:
+```bash
+./install.sh
+```
+Output:
+```asciidoc
+Determining local address
+The installer was unable to automatically detect the private IP address of this machine.
+Please choose one of the following network interfaces:
+[0] eth0        172.19.52.150
+[1] docker0     172.17.0.1
+*Enter desired number (0-1): 0
+The installer will use network interface 'eth0' (with IP address '172.19.52.150').
+Determining service address
+The installer will use the proxy at 'http://proxy.sean.hashidemos.io:3128' (imported from env var 'https_proxy')
+This installer will upgrade your current version of Docker (1.13.1) to the recommended version: 17.12.1
+*Do you want to allow this? (Y/n) N
+The installed version of Docker (1.13.1) may not be compatible with this installer.
+The recommended version is
+*Do you want to proceed anyway? (y/N) Y
+It does not look like Docker is set up with http proxy enabled.
+This script will automatically configure it now.
+*Do you want to allow this? (Y/n) Y
+```
+
+???
+Match your answers to what is highlighted in yellow.
+Select 0, N, Y and Y. For some reason the installer complains even though we explicitly state that we support it in the documentation.
+
+---
+name: Leave-Service-IP-Blank
+Leave Service IP Address Blank
+-------------------------
+Leave the Service IP address setting blank and hit [Enter] to continue.
+
+```asciidoc
+Determining service address
+The installer was unable to automatically detect the service IP address of this machine.
+Please enter the address or leave blank for unspecified.
+*Service IP address:
+```
+
+---
+name: Install-Script-Complete
+Install Script Complete
+-------------------------
+At this point you should see the following output:
+
+```asciidoc
+Operator installation successful
+
+SELinux is enabled. Switching to enforcing mode and running docker with the "--selinux-enabled" flag may cause some features to become unavailable.
+
+To continue the installation, visit the following URL in your browser:
+
+  https://<this_server_address>:8800
+```
+
+You may ignore the warning about SELinux for now. We have set it to 'permissive' mode. When the machine is rebooted it will be completely disabled.
+
+???
+During the provisioning of the lab we set `SELINUX=disabled` in the /etc/selinux/config file, and set the machine into permissive mode so we can still use it without a reboot.
+
+---
+name: Open-GUI-Installer
+Proceed to the GUI Installer
+-------------------------
+.center[
+![:scale 70%](./images/ptfe_ssl_warning.png)
+]
+
+Open the URL of your PTFE console in Chrome. It should look like this:
+
+https://ptfe.YOURNAME.hashidemos.io:8800
+
+Click on the "Advanced" link on the lower left to proceed.
+
+---
+name: Generate-PTFE-SSL-Cert
+Generate an SSL Cert
+-------------------------
+We're going to generate another SSL cert [just like we did for Bitbucket](#Generate-SSL-Cert), only this time we don't have to convert it into JKS format. Back on the command line of your PTFE instance, run the following command, replacing YOURNAME with your own name.
+
+```bash
+https_proxy=http://proxy.YOURNAME.hashidemos.io:3128 certbot certonly --server https://acme-v02.api.letsencrypt.org/directory --manual --preferred-challenges dns-01 -d ptfe.YOURNAME.hashidemos.io
+```
+
+---
+name: Copy-SSL-Certs
+Copy SSL Certs into /home/ec2-user
+-------------------------
+Copy the ssl certs and key you just generated into the ec2-user home directory. This will allow you to transfer them back onto your workstation.
+
+Command:
+```bash
+cp -rL /etc/letsencrypt/live/ptfe.YOURNAME.hashidemos.io /home/ec2-user/
+```
+
+---
+name: SCP-Certs-to-Workstation
+Copy SSL Certs to Your Workstation
+-------------------------
+Open a new cmder Window on your workstation and enter the following command. You should see a new directory appear on your desktop.
+
+```bash
+scp -r ptfe:~/ptfe.YOURNAME.hashidemos.io C:\Users\Administrator\Desktop
+```
+
+---
+name: Upload-SSL-Cert-and-Key
+Upload Your SSL Certificate and Key
+-------------------------
+.centered[
+![:scale 100%](./images/ptfe_installer_1.png)
+]
+
+???
+Upload the privkey.pem and fullchain.pem files, and enter your DNS hostname into the Hostname field.
+
+---
+name: Upload-License-to-Workstation
+Upload License File to Your Workstation
+-------------------------
+Your HashiCorp Solutions Engineer should have provided you with a license file via email. You can't simply copy and paste it into your workstation because it is a binary file. Use one of the following options:
+
+1. Enable a shared drive in your RDP settings and copy the license over.
+2. Log onto your email inside of the workstation and download the file.
+3. Stick it on Dropbox or another file sharing service that you can reach from your workstation browser.
+
+Once you've managed to get the *.rli license file onto your workstation you can upload it into the UI.
+
+???
+This bit feels a bit hacky but there's not much we can do about it. Customers go through this stuff every single day.
+
+---
+name: Select-Airgapped-Install
+Select 'Airgapped'
+-------------------------
+.centered[
+![:scale 60%](./images/ptfe_installer_2.png)
+]
+
+Select the 'Airgapped' option and continue.
+
+---
+name: Enter-Path-to-Installer
+Enter the Path to the Installer
+-------------------------
+.centered[
+![:scale 60%](./images/path_to_airgap_package.png)
+]
+
+This should be `/root/ptfe.airgap`.  
+
+If you downloaded it to `/home/ec2-user/ptfe.airgap` enter that instead.
+
+---
+name: Proceed-Anyway
+Select 'Proceed Anyway'
+-------------------------
+
+Next you'll select a password for the setup console, and another pre-flight check will run.  
+
+One of the checks will fail because it can't reach the Internet:
+
+```bash
+Can access releases.hashicorp.com - ERROR: timeout
+Can connect to releases.hashicorp.com:443.
+```
+
+You may safely ignore this failure and click 'Proceed Anyway'.
+
+---
+name: Select-Installation-Type
+Select 'Demo'
+-------------------------
+
+.centered[
+![:scale 100%](./images/install_type.png)
+]
+
+On the next page select the 'Demo' installation type.
+
+---
+name: Bypass-Proxy-for-BBS
+Add Bitbucket Server to Proxy Bypass
+-------------------------
+
+.centered[
+![:scale 100%](./images/ptfe_proxy_bypass.png)
+]
+Enter the hostname of your bitbucket server in the Proxy Bypass field.
+
+---
+name: Save-and-Restart
+Click 'Save' and Restart
+-------------------------
+Load the URL in your browser:
+
+https://ptfe.YOURNAME.hashidemos.io:8800
+
+![:scale 100%](./images/ptfe_replicated_console.png)
+
+Click on the 'Open' link to launch Terraform Enteprise.
+
+---
+name: Chapter-4-Review
+class: middle,center
+.review[
+Chapter 4 Review  
+PTFE Installation
+]
+.contents[
+☑️ Installed Docker 1.13.1 from RHEL extras  
+☑️ Ran a pre-flight check with InSpec  
+☑️ Installed Private Terraform Enterprise    
+☑️ Generated an SSL certificate for PTFE  
+☑️ Configured the PTFE console settings
+]
+
+---
+name: Chapter-5
+class: middle, center
+.section[
+Chapter 5  
+Connect PTFE to Bitbucket
+]
+
+---
+name: Follow-the-BBS-PTFE-Docs
+Follow the Documentation!
+-------------------------
+Please follow the official documentation to integrate your PTFE and Bitbucket servers. Be sure to report any issues or mistakes you find in the docs.
+
+.centered[
+https://www.terraform.io/docs/enterprise/vcs/bitbucket-server.html
+]
+
+---
+name: Chapter-5-Review
+class: middle,center
+.review[
+Chapter 5 Review  
+Connect PTFE to Bitbucket
+]
+.contents[
+☑️ Created a web hook    
+☑️ Generated an SSH key for PTFE  
+☑️ Connected Bitbucket to PTFE  
+]
+
+---
+name: Chapter-6
+class: middle, center
+.section[
+Chapter 6  
+Provision an App Server
+]
+
+---
+name: Create-a-Repo
+Create a Git Repository
+-------------------------
+.center[
+![:scale 100%](./images/create_repository.png)
+]
+
+Create a project and a repository on your Bitbucket server.  
+
+Name your new repository "webapp".
+
+---
+name: Clone-the-Repo
+Clone the Git Repository
+-------------------------
+Clone the Git repo you just created to your workstation desktop.
+
+```bash
+git clone ssh://git@bitbucket.YOURNAME.hashidemos.io:7999/web/webapp.git
+```
+
+---
+name: Download-CatApp
+Download the Cat App
+-------------------------
+Download this zip file to your desktop:
+
+https://s3-us-west-2.amazonaws.com/hc-cat-app/meow.zip
+
+---
+name: Unzip-CatApp
+Unzip the Cat App Code
+-------------------------
+Unzip meow.zip into the directory you cloned.
+
+---
+name: Add-Commit-Push
+Add, Commit, Push
+-------------------------
+Run these commands from within the webapp directory:
+
+```bash
+git add .
+git commit -m "Initial commit."
+git push origin master
+```
+
+---
+name: Create-a-Workspace
+Create a New Workspace
+-------------------------
+.center[
+![:scale 80%](./images/create_workspace.png)
+]
+
+Create a new workspace in your PTFE organization and connect it to the git repo you created.
+
+---
+name: Configure-Terraform-Variables
+Configure Your Terraform Variables
+-------------------------
+.center[
+![:scale 90%](./images/terraform_variables.png)
+]
+
+---
+name: Configure-Environment-Variables
+Configure Your Environment Variables
+-------------------------
+.center[
+![:scale 100%](./images/environment_variables.png)
+]
+
+---
+name: Run-Terraform-Apply
+Run Terraform
+-------------------------
+
+Queue up a run, or make changes to the code and push them to your bitbucket repo. PTFE will automatically kick off a plan any time new code is committed, and if you have auto-apply enabled it will run automatically.
+
+---
+name: Chapter-6-Review
+class: middle,center
+.review[
+Chapter 6 Review  
+Provision an App Server
+]
+.contents[
+☑️ Created a git repo  
+☑️ Cloned the git repo to the workstation  
+☑️ Pushed some changes to the repo  
+☑️ Deployed our application
+]
+
+---
+Appendixes
+-------------------------
+
+---
+name: Appendix-A
+Appendix A: Training Lab Prerequisites
+-------------------------
+* AWS account with API credentials to create VPCs, EC2 resources, and Route 53 DNS records
+* Terraform configured on your laptop
+* A domain name you can use for DNS records, with a zone file in Route 53
+* RDP access to the Internet
+
+---
+Appendix B: Note to the Instructor
+-------------------------
+
+Lorem ipsum dolor amet brooklyn fingerstache crucifix, aesthetic normcore PBR&B sustainable. Vinyl organic gentrify shaman skateboard keffiyeh waistcoat ennui woke pinterest bicycle rights kogi jianbing. Vaporware kombucha blog readymade snackwave. Cloud bread flannel hammock, raw denim ramps austin humblebrag bushwick tilde occupy. Snackwave art party godard, leggings normcore sustainable celiac irony fashion axe tumeric gluten-free vice humblebrag vape hammock. Occupy polaroid kinfolk tote bag paleo.
+
+Godard selfies literally woke gochujang prism neutra. Freegan green juice blue bottle, williamsburg kitsch lyft tattooed pitchfork humblebrag venmo shabby chic stumptown raw denim.
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript"></script>
+    <script src="./remark_settings.js" type="text/javascript"></script>
+  </body>
+</html>
