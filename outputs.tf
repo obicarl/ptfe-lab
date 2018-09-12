@@ -73,7 +73,7 @@ Follow the same process that you did for the Bitbucket cert.
 cp -rL /etc/letsencrypt/live/ptfe.${var.name}.hashidemos.io /home/ec2-user/
 
 # Step Four: Use the scp command (from your workstation) to copy the certs
-scp -r ptfe:~/ptfe.${var.name}.hashidemos.io C:\Users\Administrator\Desktop
+scp -r ptfe:~/ptfe.${var.name}.hashicorp-success.com C:\Users\Administrator\Desktop
 
 ##############################################################################
 # Run Inspec to do the pre-flight checks on your PTFE server
