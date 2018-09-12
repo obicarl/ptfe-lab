@@ -70,14 +70,14 @@ https_proxy=http://proxy.${var.name}.${var.domain_name}:3128 certbot certonly --
 Follow the same process that you did for the Bitbucket cert.
 
 # Step Three: Copy your SSL certs into the ec2 user's home directory
-cp -rL /etc/letsencrypt/live/ptfe.${var.name}.hashidemos.io /home/ec2-user/
+cp -rL /etc/letsencrypt/live/ptfe.${var.name}.hashicorp-success.com /home/ec2-user/
 
 # Step Four: Use the scp command (from your workstation) to copy the certs
 scp -r ptfe:~/ptfe.${var.name}.hashicorp-success.com C:\Users\Administrator\Desktop
 
 ##############################################################################
 # Run Inspec to do the pre-flight checks on your PTFE server
-inspec exec ptfe-preflight-check -t ssh://ec2-user@ptfe.${var.name}.hashidemos.io -i ~/.ssh/id_rsa --sudo
+inspec exec ptfe-preflight-check -t ssh://ec2-user@ptfe.${var.name}.hashicorp-success.com -i ~/.ssh/id_rsa --sudo
 
 ##############################################################################
 # Use the following VPC and subnet ID for the exercises in chapter 6
